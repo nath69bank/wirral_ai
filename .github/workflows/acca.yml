@@ -1,0 +1,61 @@
+name: Build matchday acca
+
+on:
+  schedule:
+    # Every day at 09:17 UTC (10:17 UK summer time): before the earliest
+    # 12:30 kick-off. The script exits straight away when there are no
+    # Premier League games that day.
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Date to build (YYYY-MM-DD, UK). Blank = today.'
+        required: false
+      force:
+        description: 'Rebuild even if that date already has an acca'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: acca
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build acca
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DATE: ${{ inputs.date }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          args=()
+          [ -n "$DATE" ] && args+=(--date "$DATE")
+          [ "$FORCE" = "true" ] && args+=(--force)
+          node scripts/generate.js "${args[@]}"
+
+      - name: Commit new acca
+        run: |
+          git add data
+          if git diff --cached --quiet; then
+            echo "Nothing new to publish."
+            exit 0
+          fi
+          git config user.name "acca-lab-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Acca for $(jq -r '.accas[0].date' data/index.json)"
+          git push
