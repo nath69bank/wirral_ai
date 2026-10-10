@@ -1,0 +1,55 @@
+name: Daily bets
+
+on:
+  schedule:
+    # 08:15 UTC every day (09:15 UK summer time): settles yesterday, then posts
+    # today's bets before the first races and the 12:30 kick-off.
+    - cron: '15 8 * * *'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Date to build (YYYY-MM-DD, UK). Blank = today.'
+        required: false
+      force:
+        description: 'Rebuild even if that day already has a card (re-posts to Telegram)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-bets
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # This repo is public, so these logs are too: the script prints tiers
+      # and prices only, never selections.
+      - name: Settle, pick and post
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_PREMIUM_CHAT_ID: ${{ secrets.TELEGRAM_PREMIUM_CHAT_ID }}
+          TELEGRAM_FREE_CHAT_ID: ${{ secrets.TELEGRAM_FREE_CHAT_ID }}
+          SITE_URL: ${{ vars.SITE_URL }}
+          DATE: ${{ inputs.date }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          args=()
+          [ -n "$DATE" ] && args+=(--date "$DATE")
+          [ "$FORCE" = "true" ] && args+=(--force)
+          node scripts/daily.js "${args[@]}"

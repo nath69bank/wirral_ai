@@ -1,19 +1,21 @@
 {
-  "name": "acca-lab",
+  "name": "cmd-shift-cash",
   "version": "1.0.0",
   "private": true,
-  "description": "Automatic Premier League accumulator builder: researches today's fixtures, team news and player form, then publishes a 3-leg acca.",
+  "description": "CMD + SHIFT + CASH: AI-researched value bets for football, horse racing, UFC and boxing, posted daily to a members site and Telegram.",
   "type": "module",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "generate": "node scripts/generate.js",
-    "serve": "npx --yes serve -l 3000 .",
+    "daily": "node scripts/daily.js",
+    "dev": "node scripts/dev.js",
     "test": "node --test"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",
+    "@vercel/blob": "^2.8.1",
+    "stripe": "^23.0.0",
     "zod": "^4.0.0"
   }
 }

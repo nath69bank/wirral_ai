@@ -1,40 +1,91 @@
-# Acca Lab
+# CMD + SHIFT + CASH ⌘ ⇧ $
 
-A Premier League accumulator, built automatically on every matchday and published as a static site.
+AI-researched value bets for **football, horse racing, UFC/MMA and boxing**. Every day it posts up to three bets, one per key:
 
-Each acca follows the same format: **3 legs**, one per fixture. Each leg has a **match win or double chance**, plus **two more selections** (shots on target, cards, fouls, corners, goals). Every pick comes with the stats behind it, an estimated price, and what to check on the team sheet. Each acca also lists a safer and a bigger version, plus the games left out and why.
+| Key | Tier | Price | Stake |
+|---|---|---|---|
+| ⌘ **CMD** | Small | around 4/1 (3/1 to 6/1) | 1pt |
+| ⇧ **SHIFT** | Medium | 20/1+ | 0.5pt |
+| $ **CASH** | Gamble | 100/1+ | 0.25pt |
+
+A tier is only posted when the research finds value (estimated chance higher than the price implies). Bets outside a tier's price band are rejected automatically.
 
 ## How it works
 
-1. **GitHub Action** (`.github/workflows/acca.yml`) runs every day at 09:17 UTC.
-2. `scripts/generate.js` asks the free **Fantasy Premier League API** for that day's fixtures. If there are none, it stops at no cost. If there are, it collects each team's most-used players with their FPL season stats (minutes, goals, xG, yellow cards) and injury status.
-3. **Claude** (`lib/acca.js`) researches with web search and web fetch: team news, confirmed or predicted XIs, Opta / The Analyst stats, and bookmaker previews. It then writes the acca. A second, cheap call turns that write-up into the JSON in `lib/schema.js`.
-4. The acca is saved to `data/accas/<date>.json`, `data/index.json` is updated, and the bot commits. Your host (Vercel or GitHub Pages) redeploys and the new acca goes live. Older accas stay in the archive dropdown.
+```
+GitHub Action (08:15 UTC daily)
+  └─ scripts/daily.js
+       1. Settle: earlier pending bets → Claude checks results → won/lost/void/placed → results posted to Telegram
+       2. Pick:   FPL feed (Premier League fixtures + player stats) + Claude web research
+                  (team news, line-ups, racecards, fight cards, Opta / Racing Post / UFC Stats…)
+                  → up to 3 bets → saved to private Vercel Blob storage
+       3. Post:   full bets → premium Telegram group; teasers (tier, price, no selections) → free channel
 
-## Setup (one-off)
+Website (Vercel)
+  public/          the site
+  api/card.js      today's bets: full for members, locked teasers for everyone else; past days public (track record)
+  api/checkout.js  Stripe Checkout (subscription)
+  api/auth.js      sign-in after checkout, email sign-in links, sign out, Stripe billing portal
+  api/telegram.js  members get a single-use 24-hour invite link to the premium group
+```
 
-1. **API key:** in GitHub, go to *Settings → Secrets and variables → Actions → New repository secret*. Name it `ANTHROPIC_API_KEY` and paste your key from console.anthropic.com.
-2. **Hosting:** import this repo into Vercel (no build settings needed, it's static). Alternatively, turn on GitHub Pages for the default branch.
-3. **Merge to the default branch:** scheduled Actions only run there.
-4. **Test it:** go to *Actions → Build matchday acca → Run workflow*. You can pick a date and tick *force* to rebuild an existing one.
+Membership is an active Stripe subscription. There's no database: the member cookie is signed with `SESSION_SECRET` and re-checked with Stripe when the paid period ends.
 
-Optional repository variables / env vars: `ANTHROPIC_MODEL` (default `claude-opus-5-5`) and `ACCA_LEGS` (default `3`).
+**This repo is public**, so bets never go in git. They're stored in a *private* Vercel Blob store, and the Action logs show only tiers and prices.
 
-## Running locally
+## Setup
+
+### 1. Vercel (site + storage)
+1. Import this repo into Vercel. No build settings are needed (`vercel.json` serves `public/` and `api/`).
+2. Go to **Storage → Create → Blob** and pick **private** access. Connect it to the project; this adds `BLOB_READ_WRITE_TOKEN`.
+3. Add environment variables:
+
+| Variable | What |
+|---|---|
+| `SESSION_SECRET` | a random string, 32+ characters (`openssl rand -hex 32`) |
+| `SITE_URL` | e.g. `https://cmdshiftcash.com` |
+| `PRICE_LABEL` | shown on the site, e.g. `£19.99/month` |
+| `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID` | see step 2 |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_PREMIUM_CHAT_ID` | see step 3 (for member invite links) |
+| `RESEND_API_KEY`, `EMAIL_FROM` | see step 4 |
+
+### 2. Stripe (payments)
+1. Create a product, "CMD + SHIFT + CASH Premium", with a recurring monthly price. Copy the price ID (`price_…`) into `STRIPE_PRICE_ID`.
+2. Copy your secret key into `STRIPE_SECRET_KEY`.
+3. Turn on the **Customer portal** (Settings → Billing → Customer portal) so members can cancel or update their card.
+
+### 3. Telegram
+1. Message **@BotFather**, send `/newbot`, and copy the token into `TELEGRAM_BOT_TOKEN`.
+2. Create a **private group** for premium members. Add the bot as an **admin** with "Invite users via link" turned on.
+3. Optional: create a **public channel** for free teasers and results. Add the bot as an admin with "Post messages" turned on.
+4. Get each chat ID: post a message in the chat, open `https://api.telegram.org/bot<TOKEN>/getUpdates`, and copy `chat.id` (it starts with `-100`). These are `TELEGRAM_PREMIUM_CHAT_ID` and `TELEGRAM_FREE_CHAT_ID`.
+
+### 4. Email sign-in links (Resend)
+Sign up at resend.com, verify your domain, and set `RESEND_API_KEY` and `EMAIL_FROM` (e.g. `CMD + SHIFT + CASH <bets@yourdomain.com>`).
+
+### 5. GitHub Action (the daily run)
+In this repo, go to **Settings → Secrets and variables → Actions** and add:
+- Secrets: `ANTHROPIC_API_KEY`, `BLOB_READ_WRITE_TOKEN` (the same token Vercel shows), `TELEGRAM_BOT_TOKEN`, `TELEGRAM_PREMIUM_CHAT_ID`, `TELEGRAM_FREE_CHAT_ID`
+- Variable: `SITE_URL`
+
+Test it from **Actions → Daily bets → Run workflow**. Scheduled runs only fire from the default branch.
+
+## Local preview
 
 ```bash
 npm install
-ANTHROPIC_API_KEY=sk-ant-... npm run generate -- --date 2026-10-17
-npm run serve        # http://localhost:3000
-npm test             # offline tests, no key needed
+npm test                                              # offline, no keys needed
+SESSION_SECRET=$(openssl rand -hex 32) npm run dev    # http://localhost:3000, cards read from ./.data
+ANTHROPIC_API_KEY=... npm run daily -- --no-post      # real research run, saved to ./.data, nothing posted
 ```
 
-## Cost
+## Running costs (rough)
+- Claude: about $1–3 a day (one research run plus one settlement run, each with web search)
+- Vercel Hobby, Blob, GitHub Actions, Telegram: free at this scale
+- Stripe: per-transaction fees; Resend: free tier
 
-A matchday costs one research call (up to 25 searches and 15 page fetches) plus one small structuring call. Expect roughly $0.50–$2 per matchday. Blank days cost nothing.
-
-## Limits worth knowing
-
-- The morning run comes before the team sheets (published about an hour before kick-off). Player picks use predicted XIs, and every leg says which players must be confirmed.
-- Prices are estimates taken from previews, not a live odds feed. A bet builder will price linked selections in the same game lower.
-- This is research, not a guarantee. 18+, gamble responsibly: [BeGambleAware](https://www.begambleaware.org/).
+## Things to know
+- **Bets are posted, not placed.** Bookmakers don't offer APIs for placing bets on personal accounts. The service researches, builds and publishes the bet, and members place it themselves.
+- **Prices are estimates** from previews at research time. Each bet says what to check (team sheets, non-runners, weigh-ins).
+- **Lapsed members in Telegram:** invite links are single-use and expire after 24 hours, but members who cancel stay in the group until removed. Prune the group manually for now.
+- **UK rules:** paid tipping services must follow the CAP Code (no "guaranteed winners", clear 18+ messaging, no appeal to under-18s). If you add bookmaker affiliate links, the bookmaker's licence conditions apply to you too. Take advice before launch.

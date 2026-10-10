@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CMD + SHIFT + CASH</title>
+  <meta name="description" content="AI-researched value bets for football, horse racing, UFC and boxing. Three tiers every day: CMD around 4/1, SHIFT 20/1+, CASH 100/1+.">
+  <meta name="theme-color" content="#0a0c0b">
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-row">
+      <a class="brand" href="./" aria-label="CMD + SHIFT + CASH home">
+        <span class="keys" aria-hidden="true"><kbd>⌘</kbd><kbd>⇧</kbd><kbd class="cash">$</kbd></span>
+        <span class="wordmark">CMD + SHIFT + <b>CASH</b></span>
+      </a>
+      <nav class="nav">
+        <a href="#today">Today</a>
+        <a href="#record">Record</a>
+        <a href="#join" class="join-link" id="nav-join">Join</a>
+        <button type="button" class="ghost" id="nav-account" hidden>Account</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <main>
+    <section class="hero wrap">
+      <p class="eyebrow">AI-researched value bets</p>
+      <h1>The shortcut to <span class="hl">value</span>.</h1>
+      <p class="lede">Every day we research football, horse racing, UFC and boxing, and post a bet only where the price beats the real chance. There are three tiers, one for each key.</p>
+      <div class="tiers">
+        <article class="tier tier-cmd">
+          <kbd>⌘</kbd>
+          <div>
+            <h2>CMD <span>· Small</span></h2>
+            <p class="target">around 4/1</p>
+            <p>The controlled one. A short acca, bet builder or single. Stake 1pt.</p>
+          </div>
+        </article>
+        <article class="tier tier-shift">
+          <kbd>⇧</kbd>
+          <div>
+            <h2>SHIFT <span>· Medium</span></h2>
+            <p class="target">20/1+</p>
+            <p>Shifts the bank. Accas and builders where the numbers stack up. Stake 0.5pt.</p>
+          </div>
+        </article>
+        <article class="tier tier-cash">
+          <kbd class="cash">$</kbd>
+          <div>
+            <h2>CASH <span>· Gamble</span></h2>
+            <p class="target">100/1+</p>
+            <p>The big swing, only when every leg has a reason. Stake 0.25pt.</p>
+          </div>
+        </article>
+      </div>
+      <ul class="sports" aria-label="Sports covered">
+        <li>Football accas &amp; bet builders</li><li>Horse racing</li><li>UFC / MMA</li><li>Boxing</li>
+      </ul>
+    </section>
+
+    <section class="wrap section" id="today" aria-labelledby="today-h">
+      <div class="section-head">
+        <h2 id="today-h">The card</h2>
+        <label class="picker">
+          <span class="sr-only">Choose a day</span>
+          <select id="date"></select>
+        </label>
+      </div>
+      <p class="card-summary" id="card-summary"></p>
+      <div id="bets" class="bets"></div>
+      <details class="panel" id="passed-panel" hidden>
+        <summary>What we passed on</summary>
+        <p id="passed"></p>
+      </details>
+      <details class="panel" id="sources-panel" hidden>
+        <summary>Sources</summary>
+        <ul id="sources"></ul>
+      </details>
+    </section>
+
+    <section class="wrap section" id="record" aria-labelledby="record-h">
+      <div class="section-head"><h2 id="record-h">Track record</h2><span class="muted small">Settled bets, level stakes in points</span></div>
+      <div class="stats" id="stats"></div>
+    </section>
+
+    <section class="wrap section" id="join" aria-labelledby="join-h">
+      <div class="join" id="join-box">
+        <div>
+          <p class="eyebrow">Premium</p>
+          <h2 id="join-h">Get every bet the moment it's posted.</h2>
+          <ul class="ticks">
+            <li>Today's CMD, SHIFT and CASH bets in full on the site</li>
+            <li>The private Telegram group, with each bet posted as it's found</li>
+            <li>Every leg's reasoning, the value case, and what to check before you place it</li>
+            <li>Every result settled and tracked, wins and losses</li>
+          </ul>
+        </div>
+        <div class="join-cta">
+          <p class="price" id="price"></p>
+          <button type="button" class="primary" id="checkout">Join now</button>
+          <p class="muted small">Cancel any time. 18+ only.</p>
+          <form class="login" id="login" autocomplete="on">
+            <label for="email">Already a member? Get a sign-in link</label>
+            <div class="row">
+              <input id="email" name="email" type="email" placeholder="you@example.com" required>
+              <button type="submit" class="ghost">Send link</button>
+            </div>
+            <p class="muted small" id="login-msg" role="status"></p>
+          </form>
+        </div>
+      </div>
+
+      <div class="join member" id="member-box" hidden>
+        <div>
+          <p class="eyebrow">Premium</p>
+          <h2>You're in.</h2>
+          <p class="muted">Every bet is on this page as soon as it's posted. Join the Telegram group to get them on your phone.</p>
+        </div>
+        <div class="join-cta">
+          <button type="button" class="primary" id="tg">Join the Telegram group</button>
+          <button type="button" class="ghost" id="portal">Manage subscription</button>
+          <button type="button" class="link" id="logout">Sign out</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap">
+      <p><strong>18+ only. Please gamble responsibly.</strong> These are opinions based on research, not guarantees, and prices move. Most bets lose, longer prices more often. Only stake what you can afford to lose.</p>
+      <p>Free, confidential help: <a href="https://www.begambleaware.org/" rel="noopener">BeGambleAware.org</a> · National Gambling Helpline 0808 8020 133 · <a href="https://www.gamstop.co.uk/" rel="noopener">GAMSTOP</a> self-exclusion</p>
+      <p class="muted small">© CMD + SHIFT + CASH</p>
+    </div>
+  </footer>
+
+  <template id="bet-tpl">
+    <article class="bet">
+      <header class="bet-head">
+        <kbd class="bet-key"></kbd>
+        <div class="bet-title">
+          <p class="bet-tier"></p>
+          <h3></h3>
+        </div>
+        <div class="bet-price">
+          <strong class="bet-odds"></strong>
+          <span class="bet-stake"></span>
+        </div>
+      </header>
+      <ol class="legs"></ol>
+      <div class="bet-foot"></div>
+    </article>
+  </template>
+
+  <script src="assets/app.js" type="module"></script>
+</body>
+</html>
